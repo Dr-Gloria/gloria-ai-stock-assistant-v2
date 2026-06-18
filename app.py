@@ -7,111 +7,83 @@ import requests
 from datetime import datetime, timedelta
 
 st.set_page_config(
-    page_title="Gloria AI Stock Assistant v3",
-    page_icon="📈",
+    page_title="Gloria AI Stock Assistant v4",
+    page_icon="💰",
     layout="wide"
 )
 
-# -----------------------------
-# CSS
-# -----------------------------
+# =============================
+# Style
+# =============================
 st.markdown("""
 <style>
-.main {
-    background-color: #f7f8fb;
-}
-.block-container {
-    padding-top: 1.5rem;
-    padding-bottom: 2rem;
-}
+.block-container {padding-top: 1.2rem; padding-bottom: 2rem;}
 .hero {
-    background: linear-gradient(135deg, #1f2937 0%, #374151 45%, #6b4f3f 100%);
-    padding: 26px 30px;
-    border-radius: 24px;
+    background: linear-gradient(135deg, #111827 0%, #374151 42%, #8b6f47 100%);
+    padding: 28px 32px;
+    border-radius: 26px;
     color: white;
     margin-bottom: 20px;
-    box-shadow: 0 10px 30px rgba(31,41,55,0.18);
+    box-shadow: 0 12px 30px rgba(15,23,42,0.22);
 }
-.hero h1 {
-    margin: 0;
-    font-size: 34px;
+.hero h1 {margin: 0; font-size: 36px;}
+.hero p {margin-top: 10px; font-size: 16px; opacity: 0.92;}
+.big-signal {
+    padding: 28px;
+    border-radius: 26px;
+    color: #111827;
+    box-shadow: 0 10px 26px rgba(15,23,42,0.10);
+    border: 1px solid rgba(255,255,255,0.8);
+    margin-bottom: 16px;
 }
-.hero p {
-    margin-top: 10px;
-    font-size: 16px;
-    opacity: 0.9;
-}
-.card {
+.buy {background: linear-gradient(135deg, #dcfce7 0%, #86efac 100%); border-left: 10px solid #16a34a;}
+.wait {background: linear-gradient(135deg, #fef9c3 0%, #fde68a 100%); border-left: 10px solid #ca8a04;}
+.sell {background: linear-gradient(135deg, #fee2e2 0%, #fca5a5 100%); border-left: 10px solid #dc2626;}
+.hold {background: linear-gradient(135deg, #dbeafe 0%, #93c5fd 100%); border-left: 10px solid #2563eb;}
+.signal-title {font-size: 15px; color: #374151; font-weight: 700;}
+.signal-main {font-size: 44px; font-weight: 900; margin-top: 6px;}
+.signal-sub {font-size: 16px; margin-top: 8px; color: #374151;}
+.price-card {
     background: white;
     padding: 22px;
-    border-radius: 20px;
-    box-shadow: 0 6px 18px rgba(15,23,42,0.07);
+    border-radius: 22px;
+    box-shadow: 0 8px 22px rgba(15,23,42,0.08);
     border: 1px solid #eef0f4;
-    min-height: 120px;
+    min-height: 125px;
 }
-.signal-buy {
-    background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
-    border-left: 8px solid #16a34a;
-}
-.signal-hold {
-    background: linear-gradient(135deg, #fef9c3 0%, #fde68a 100%);
-    border-left: 8px solid #ca8a04;
-}
-.signal-sell {
-    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-    border-left: 8px solid #dc2626;
-}
-.metric-title {
-    color: #6b7280;
-    font-size: 14px;
-    margin-bottom: 6px;
-}
-.metric-value {
-    font-size: 28px;
-    font-weight: 800;
-    color: #111827;
-}
-.small-note {
-    color: #6b7280;
-    font-size: 13px;
-}
-.trade-box {
+.price-label {font-size: 14px; color: #6b7280; font-weight: 700;}
+.price-value {font-size: 34px; font-weight: 900; color: #111827; margin-top: 6px;}
+.price-note {font-size: 13px; color: #6b7280; margin-top: 5px;}
+.section-title {font-size: 24px; font-weight: 900; margin-top: 24px; margin-bottom: 12px;}
+.reason-box {
     background: #ffffff;
-    padding: 20px;
+    padding: 18px 20px;
     border-radius: 18px;
     border: 1px solid #e5e7eb;
     box-shadow: 0 5px 16px rgba(15,23,42,0.06);
 }
-.trade-label {
-    font-size: 13px;
-    color: #6b7280;
-}
-.trade-value {
-    font-size: 24px;
-    font-weight: 800;
-    color: #111827;
-}
-.warning-box {
+.alert-box {
     background: #fff7ed;
-    border-left: 6px solid #f97316;
+    border-left: 7px solid #f97316;
     padding: 16px 18px;
-    border-radius: 14px;
+    border-radius: 15px;
     color: #7c2d12;
+    margin-top: 14px;
 }
 </style>
 """, unsafe_allow_html=True)
 
 st.markdown("""
 <div class="hero">
-<h1>📈 Gloria AI Stock Assistant v3</h1>
-<p>整合基本面、技術面、籌碼面、趨勢面，並新增交易模式：買點、停損、停利、賣點與行動建議。</p>
+<h1>💰 Gloria AI Stock Assistant v4</h1>
+<p>決策版：今天買不買？多少錢買？多少錢賣？如果已持有，現在要續抱、停利還是停損？</p>
 </div>
 """, unsafe_allow_html=True)
 
-# -----------------------------
+# =============================
 # Helpers
-# -----------------------------
-def normalize_ticker(raw: str) -> tuple[str, str]:
+# =============================
+def normalize_ticker(raw: str):
     raw = raw.strip().upper()
     if raw.isdigit():
         return f"{raw}.TW", raw
@@ -125,9 +97,9 @@ def safe_float(x, default=np.nan):
     except Exception:
         return default
 
-@st.cache_data(ttl=900)
-def fetch_price_data(ticker: str, period: str = "2y") -> pd.DataFrame:
-    df = yf.download(ticker, period=period, auto_adjust=False, progress=False)
+@st.cache_data(ttl=600)
+def fetch_price_data(ticker: str, period: str, interval: str):
+    df = yf.download(ticker, period=period, interval=interval, auto_adjust=False, progress=False)
     if df.empty:
         return df
     if isinstance(df.columns, pd.MultiIndex):
@@ -135,10 +107,10 @@ def fetch_price_data(ticker: str, period: str = "2y") -> pd.DataFrame:
     df = df.dropna(subset=["High", "Low", "Close"])
     return df
 
-# -----------------------------
-# Technical indicators
-# -----------------------------
-def parabolic_sar(df: pd.DataFrame, step: float = 0.02, max_step: float = 0.2) -> pd.Series:
+# =============================
+# Indicators
+# =============================
+def parabolic_sar(df: pd.DataFrame, step=0.02, max_step=0.2):
     high = df["High"].values
     low = df["Low"].values
     n = len(df)
@@ -182,19 +154,18 @@ def parabolic_sar(df: pd.DataFrame, step: float = 0.02, max_step: float = 0.2) -
                     ep = low[i]
                     af = min(af + step, max_step)
 
-    return pd.Series(sar, index=df.index, name="SAR")
+    return pd.Series(sar, index=df.index, name="PSAR")
 
-def rsi(series: pd.Series, period: int = 14) -> pd.Series:
+def rsi(series, period=14):
     delta = series.diff()
     gain = delta.clip(lower=0)
     loss = -delta.clip(upper=0)
     avg_gain = gain.ewm(alpha=1/period, adjust=False).mean()
     avg_loss = loss.ewm(alpha=1/period, adjust=False).mean()
     rs = avg_gain / avg_loss.replace(0, np.nan)
-    value = 100 - (100 / (1 + rs))
-    return value.fillna(50).rename("RSI")
+    return (100 - (100 / (1 + rs))).fillna(50).rename("RSI")
 
-def macd(series: pd.Series, fast: int = 12, slow: int = 26, signal: int = 9):
+def macd(series, fast=12, slow=26, signal=9):
     ema_fast = series.ewm(span=fast, adjust=False).mean()
     ema_slow = series.ewm(span=slow, adjust=False).mean()
     macd_line = ema_fast - ema_slow
@@ -202,7 +173,7 @@ def macd(series: pd.Series, fast: int = 12, slow: int = 26, signal: int = 9):
     hist = macd_line - signal_line
     return macd_line.rename("MACD"), signal_line.rename("MACD_signal"), hist.rename("MACD_hist")
 
-def stochastic_kd(df: pd.DataFrame, n: int = 9):
+def stochastic_kd(df, n=9):
     low_min = df["Low"].rolling(n).min()
     high_max = df["High"].rolling(n).max()
     rsv = (df["Close"] - low_min) / (high_max - low_min) * 100
@@ -210,568 +181,446 @@ def stochastic_kd(df: pd.DataFrame, n: int = 9):
     d = k.ewm(alpha=1/3, adjust=False).mean()
     return k.rename("K"), d.rename("D")
 
-def bollinger_bands(series: pd.Series, window: int = 20, n_std: int = 2):
+def bollinger(series, window=20, n_std=2):
     mid = series.rolling(window).mean()
     std = series.rolling(window).std()
-    upper = mid + n_std * std
-    lower = mid - n_std * std
-    return upper.rename("BB_upper"), mid.rename("BB_mid"), lower.rename("BB_lower")
+    return (mid + n_std * std).rename("BB_upper"), mid.rename("BB_mid"), (mid - n_std * std).rename("BB_lower")
 
-def atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
-    high_low = df["High"] - df["Low"]
-    high_close = (df["High"] - df["Close"].shift()).abs()
-    low_close = (df["Low"] - df["Close"].shift()).abs()
-    tr = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
+def atr(df, period=14):
+    tr = pd.concat([
+        df["High"] - df["Low"],
+        (df["High"] - df["Close"].shift()).abs(),
+        (df["Low"] - df["Close"].shift()).abs()
+    ], axis=1).max(axis=1)
     return tr.ewm(alpha=1/period, adjust=False).mean().rename("ATR")
 
-def prepare_indicators(df: pd.DataFrame) -> pd.DataFrame:
+def prepare_indicators(df):
     df = df.copy()
-    df["SAR"] = parabolic_sar(df)
+    df["PSAR"] = parabolic_sar(df)
     df["MA20"] = df["Close"].rolling(20).mean()
     df["MA60"] = df["Close"].rolling(60).mean()
     df["RSI"] = rsi(df["Close"])
     df["MACD"], df["MACD_signal"], df["MACD_hist"] = macd(df["Close"])
     df["K"], df["D"] = stochastic_kd(df)
-    df["BB_upper"], df["BB_mid"], df["BB_lower"] = bollinger_bands(df["Close"])
+    df["BB_upper"], df["BB_mid"], df["BB_lower"] = bollinger(df["Close"])
     df["ATR"] = atr(df)
-    df["Return_20D"] = df["Close"].pct_change(20) * 100
+    df["Return_20"] = df["Close"].pct_change(20) * 100
     df["Volume_MA20"] = df["Volume"].rolling(20).mean() if "Volume" in df.columns else np.nan
     return df.dropna()
 
-# -----------------------------
-# Fundamental and chip data
-# -----------------------------
+# =============================
+# Fundamentals and TWSE chips
+# =============================
 @st.cache_data(ttl=3600)
-def fetch_fundamentals(ticker: str) -> dict:
+def fetch_fundamentals(ticker):
     try:
-        tk = yf.Ticker(ticker)
-        info = tk.info or {}
+        info = yf.Ticker(ticker).info or {}
     except Exception:
         info = {}
-
-    eps = safe_float(info.get("trailingEps"))
-    pe = safe_float(info.get("trailingPE"))
     roe = safe_float(info.get("returnOnEquity"))
     dy = safe_float(info.get("dividendYield"))
-
-    if not np.isnan(roe):
-        roe *= 100
-    if not np.isnan(dy):
-        dy *= 100
-
     return {
-        "EPS": eps,
-        "PE": pe,
-        "ROE (%)": roe,
-        "Dividend Yield (%)": dy,
         "Company": info.get("longName") or info.get("shortName") or ticker,
+        "EPS": safe_float(info.get("trailingEps")),
+        "PE": safe_float(info.get("trailingPE")),
+        "ROE (%)": roe * 100 if not np.isnan(roe) else np.nan,
+        "Dividend Yield (%)": dy * 100 if not np.isnan(dy) else np.nan,
         "Sector": info.get("sector", "N/A"),
     }
 
 @st.cache_data(ttl=3600)
-def fetch_twse_institutional(stock_code: str) -> dict:
-    result = {
-        "foreign_net": np.nan,
-        "investment_trust_net": np.nan,
-        "dealer_net": np.nan,
-        "total_institution_net": np.nan,
-        "source_note": "No institutional data available."
-    }
-
+def fetch_twse_institutional(stock_code):
+    result = {"foreign_net": np.nan, "trust_net": np.nan, "dealer_net": np.nan, "total_net": np.nan, "note": "No TWSE data."}
     if not stock_code.isdigit():
         return result
-
     for days_back in range(1, 15):
         date_str = (datetime.today() - timedelta(days=days_back)).strftime("%Y%m%d")
         url = f"https://www.twse.com.tw/rwd/zh/fund/T86?date={date_str}&selectType=ALLBUT0999&response=json"
         try:
-            r = requests.get(url, timeout=8)
-            data = r.json()
-            fields = data.get("fields", [])
-            rows = data.get("data", [])
+            data = requests.get(url, timeout=8).json()
+            fields, rows = data.get("fields", []), data.get("data", [])
             if not fields or not rows:
                 continue
-            df = pd.DataFrame(rows, columns=fields)
-            row = df[df["證券代號"].astype(str).str.strip() == stock_code]
+            d = pd.DataFrame(rows, columns=fields)
+            row = d[d["證券代號"].astype(str).str.strip() == stock_code]
             if row.empty:
                 continue
             row = row.iloc[0]
-
-            def parse_num(v):
+            def parse(v):
                 try:
                     return float(str(v).replace(",", "").replace("--", "0"))
                 except Exception:
                     return np.nan
-
             return {
-                "foreign_net": parse_num(row.get("外陸資買賣超股數(不含外資自營商)", np.nan)),
-                "investment_trust_net": parse_num(row.get("投信買賣超股數", np.nan)),
-                "dealer_net": parse_num(row.get("自營商買賣超股數", np.nan)),
-                "total_institution_net": parse_num(row.get("三大法人買賣超股數", np.nan)),
-                "source_note": f"TWSE institutional data date: {date_str}"
+                "foreign_net": parse(row.get("外陸資買賣超股數(不含外資自營商)", np.nan)),
+                "trust_net": parse(row.get("投信買賣超股數", np.nan)),
+                "dealer_net": parse(row.get("自營商買賣超股數", np.nan)),
+                "total_net": parse(row.get("三大法人買賣超股數", np.nan)),
+                "note": f"TWSE date: {date_str}",
             }
         except Exception:
             continue
-
     return result
 
-@st.cache_data(ttl=3600)
-def fetch_margin_data(stock_code: str) -> dict:
-    result = {
-        "margin_balance": np.nan,
-        "short_balance": np.nan,
-        "margin_short_note": "No margin/short data available."
-    }
-
-    if not stock_code.isdigit():
-        return result
-
-    for days_back in range(1, 15):
-        date_str = (datetime.today() - timedelta(days=days_back)).strftime("%Y%m%d")
-        url = f"https://www.twse.com.tw/rwd/zh/marginTrading/MI_MARGN?date={date_str}&selectType=ALL&response=json"
-        try:
-            r = requests.get(url, timeout=8)
-            data = r.json()
-            fields = data.get("fields", [])
-            rows = data.get("data", [])
-            if not fields or not rows:
-                continue
-            df = pd.DataFrame(rows, columns=fields)
-            row = df[df["股票代號"].astype(str).str.strip() == stock_code]
-            if row.empty:
-                continue
-            row = row.iloc[0]
-
-            def parse_num(v):
-                try:
-                    return float(str(v).replace(",", "").replace("--", "0"))
-                except Exception:
-                    return np.nan
-
-            return {
-                "margin_balance": parse_num(row.get("融資今日餘額", np.nan)),
-                "short_balance": parse_num(row.get("融券今日餘額", np.nan)),
-                "margin_short_note": f"TWSE margin data date: {date_str}"
-            }
-        except Exception:
-            continue
-
-    return result
-
-# -----------------------------
-# Scoring
-# -----------------------------
-def score_fundamentals(f):
-    score, notes = 0, []
-    eps, pe, roe, dy = f["EPS"], f["PE"], f["ROE (%)"], f["Dividend Yield (%)"]
-
-    if not np.isnan(eps) and eps > 0:
-        score += 6; notes.append("EPS 為正，獲利能力加分。")
-    else:
-        notes.append("EPS 資料不足或為負。")
-
-    if not np.isnan(pe):
-        if 8 <= pe <= 25:
-            score += 7; notes.append("本益比落在相對合理區間。")
-        elif 0 < pe < 8:
-            score += 5; notes.append("本益比較低，但需確認是否為景氣循環或一次性因素。")
-        elif 25 < pe <= 40:
-            score += 3; notes.append("本益比較高，可能反映成長期待，也可能偏貴。")
-        else:
-            notes.append("本益比偏極端或資料不足。")
-    else:
-        notes.append("本益比資料不足。")
-
-    if not np.isnan(roe):
-        if roe >= 15:
-            score += 7; notes.append("ROE 高於 15%，股東權益報酬率佳。")
-        elif roe >= 8:
-            score += 4; notes.append("ROE 尚可。")
-        else:
-            notes.append("ROE 偏低。")
-    else:
-        notes.append("ROE 資料不足。")
-
-    if not np.isnan(dy):
-        if dy >= 3:
-            score += 5; notes.append("殖利率具一定吸引力。")
-        elif dy > 0:
-            score += 3; notes.append("有配息，但殖利率普通。")
-        else:
-            notes.append("殖利率偏低。")
-    else:
-        notes.append("殖利率資料不足。")
-
-    return min(score, 25), notes
-
-def score_technicals(df):
+# =============================
+# Signal and prices
+# =============================
+def score_market(df, chip):
     latest, prev = df.iloc[-1], df.iloc[-2]
-    score, notes = 0, []
+    score = 0
+    reasons_buy = []
+    reasons_sell = []
 
-    if latest["Close"] > latest["SAR"]:
-        score += 4; notes.append("PSAR 位於價格下方，短線偏多。")
+    if latest["Close"] > latest["PSAR"]:
+        score += 18; reasons_buy.append("價格在 PSAR 上方，短線偏多。")
     else:
-        notes.append("PSAR 位於價格上方，短線偏弱。")
+        reasons_sell.append("價格跌破 PSAR，屬於轉弱訊號。")
 
     if latest["MA20"] > latest["MA60"]:
-        score += 5; notes.append("MA20 高於 MA60，中期趨勢偏多。")
+        score += 16; reasons_buy.append("MA20 高於 MA60，中期趨勢偏多。")
     else:
-        notes.append("MA20 低於 MA60，中期趨勢偏弱。")
-
-    if 45 <= latest["RSI"] <= 70:
-        score += 4; notes.append("RSI 偏多但未明顯過熱。")
-    elif latest["RSI"] > 75:
-        score += 1; notes.append("RSI 偏高，短線可能過熱。")
-    elif latest["RSI"] < 35:
-        score += 1; notes.append("RSI 偏弱，需觀察是否止跌。")
-    else:
-        score += 2; notes.append("RSI 中性。")
+        reasons_sell.append("MA20 低於 MA60，中期趨勢還不夠強。")
 
     if latest["MACD"] > latest["MACD_signal"]:
-        score += 5; notes.append("MACD 在訊號線上方，動能偏多。")
+        score += 16; reasons_buy.append("MACD 在訊號線上方，動能偏多。")
     else:
-        notes.append("MACD 在訊號線下方，動能偏弱。")
+        reasons_sell.append("MACD 在訊號線下方，動能偏弱。")
 
     if latest["K"] > latest["D"] and latest["K"] < 85:
-        score += 3; notes.append("KD 偏多且尚未嚴重過熱。")
+        score += 12; reasons_buy.append("KD 向上且未嚴重過熱。")
     elif latest["K"] > 85:
-        score += 1; notes.append("KD 偏高，短線可能震盪。")
+        score += 4; reasons_sell.append("KD 偏高，短線可能過熱。")
     else:
-        notes.append("KD 尚未轉強。")
+        reasons_sell.append("KD 尚未轉強。")
 
-    if latest["Close"] > latest["BB_mid"] and latest["Close"] < latest["BB_upper"]:
-        score += 4; notes.append("價格位於布林中軌上方，趨勢健康。")
-    elif latest["Close"] >= latest["BB_upper"]:
-        score += 2; notes.append("價格接近布林上軌，偏強但可能過熱。")
+    if 45 <= latest["RSI"] <= 70:
+        score += 12; reasons_buy.append("RSI 偏多但未明顯過熱。")
+    elif latest["RSI"] > 75:
+        score += 2; reasons_sell.append("RSI 過熱，追價風險較高。")
+    elif latest["RSI"] < 35:
+        reasons_sell.append("RSI 偏弱，尚未確認止跌。")
     else:
-        notes.append("價格在布林中軌下方，技術面保守。")
+        score += 6
 
-    return min(score, 25), notes
+    if latest["Close"] > latest["BB_mid"]:
+        score += 10; reasons_buy.append("價格位於布林中軌上方。")
+    else:
+        reasons_sell.append("價格在布林中軌下方。")
 
-def score_chips(chip, margin):
-    score, notes = 0, []
-    total, foreign, trust, dealer = chip["total_institution_net"], chip["foreign_net"], chip["investment_trust_net"], chip["dealer_net"]
+    if latest["Return_20"] > 0:
+        score += 8; reasons_buy.append("近 20 期報酬為正。")
+    else:
+        reasons_sell.append("近 20 期報酬為負。")
 
-    if not np.isnan(total):
-        if total > 0:
-            score += 8; notes.append("三大法人買超，籌碼偏多。")
+    if not np.isnan(chip.get("total_net", np.nan)):
+        if chip["total_net"] > 0:
+            score += 8; reasons_buy.append("三大法人買超。")
         else:
-            notes.append("三大法人賣超，籌碼偏弱。")
-    else:
-        notes.append("三大法人資料不足。")
+            reasons_sell.append("三大法人賣超。")
 
-    if not np.isnan(foreign):
-        if foreign > 0:
-            score += 6; notes.append("外資買超。")
-        else:
-            notes.append("外資賣超。")
-    else:
-        notes.append("外資資料不足。")
+    return min(score, 100), reasons_buy, reasons_sell
 
-    if not np.isnan(trust):
-        if trust > 0:
-            score += 5; notes.append("投信買超。")
-        else:
-            notes.append("投信未買超。")
-    else:
-        notes.append("投信資料不足。")
-
-    if not np.isnan(dealer):
-        if dealer > 0:
-            score += 3; notes.append("自營商買超。")
-        else:
-            notes.append("自營商未買超。")
-    else:
-        notes.append("自營商資料不足。")
-
-    if not np.isnan(margin["margin_balance"]) and not np.isnan(margin["short_balance"]):
-        score += 3; notes.append("融資融券資料可用，暫給中性分。")
-    else:
-        notes.append("融資融券資料不足。")
-
-    return min(score, 25), notes
-
-def score_trend(df):
-    latest, prev = df.iloc[-1], df.iloc[-2]
-    score, notes = 0, []
-
-    if latest["Return_20D"] > 8:
-        score += 8; notes.append("近20日漲幅明顯，趨勢強。")
-    elif latest["Return_20D"] > 0:
-        score += 5; notes.append("近20日為正報酬，趨勢偏多。")
-    else:
-        notes.append("近20日報酬為負，趨勢偏弱。")
-
-    if latest["Close"] > latest["MA20"] > latest["MA60"]:
-        score += 8; notes.append("價格、MA20、MA60 呈多頭排列。")
-    elif latest["Close"] > latest["MA60"]:
-        score += 5; notes.append("價格仍在 MA60 上方。")
-    else:
-        notes.append("價格在 MA60 下方，趨勢保守。")
-
-    if "Volume" in df.columns and not np.isnan(latest.get("Volume_MA20", np.nan)):
-        if latest["Volume"] > latest["Volume_MA20"] and latest["Close"] > prev["Close"]:
-            score += 5; notes.append("價漲量增，趨勢加分。")
-        elif latest["Volume"] < latest["Volume_MA20"]:
-            score += 2; notes.append("量能未明顯放大。")
-        else:
-            score += 3; notes.append("量能中性。")
-
-    if latest["MACD_hist"] > prev["MACD_hist"]:
-        score += 4; notes.append("MACD histogram 改善，動能增強。")
-    else:
-        notes.append("MACD histogram 未改善。")
-
-    return min(score, 25), notes
-
-def recommendation(total_score):
-    if total_score >= 80:
-        return "🟢 Strong Buy / 強烈偏多"
-    if total_score >= 70:
-        return "🟢 Buy / 偏多"
-    if total_score >= 55:
-        return "🟡 Hold / 觀望或續抱"
-    if total_score >= 40:
-        return "🟠 Weak / 偏弱，保守觀察"
-    return "🔴 Sell or Avoid / 偏空或暫避"
-
-# -----------------------------
-# Trading plan
-# -----------------------------
-def compute_trading_plan(df, total_score):
+def decision_without_position(df, score):
     latest = df.iloc[-1]
-    prev = df.iloc[-2]
+    close, ma20, psar, atr_v, bb_mid, bb_upper = latest["Close"], latest["MA20"], latest["PSAR"], latest["ATR"], latest["BB_mid"], latest["BB_upper"]
 
-    close = latest["Close"]
-    ma20 = latest["MA20"]
-    ma60 = latest["MA60"]
-    sar = latest["SAR"]
-    atr_v = latest["ATR"]
-    bb_upper = latest["BB_upper"]
-    bb_mid = latest["BB_mid"]
-    bb_lower = latest["BB_lower"]
-    rsi_v = latest["RSI"]
+    buy1 = max(min(ma20, psar, bb_mid), close - 0.9 * atr_v)
+    buy2 = max(latest["BB_lower"], buy1 - 0.8 * atr_v)
+    chase_limit = min(close * 1.015, close + 0.25 * atr_v)
 
-    bullish_count = 0
-    bullish_count += close > sar
-    bullish_count += ma20 > ma60
-    bullish_count += latest["MACD"] > latest["MACD_signal"]
-    bullish_count += latest["K"] > latest["D"]
-    bullish_count += close > bb_mid
-    bullish_count += latest["MACD_hist"] > prev["MACD_hist"]
-
-    if total_score >= 70 and bullish_count >= 4:
-        action = "BUY"
-        action_zh = "🟢 可考慮分批買進"
-        css = "signal-buy"
-    elif total_score < 45 or bullish_count <= 2 or close < sar:
-        action = "SELL"
-        action_zh = "🔴 避開或減碼"
-        css = "signal-sell"
-    else:
-        action = "WAIT"
-        action_zh = "🟡 等待更好買點"
-        css = "signal-hold"
-
-    # Buy zone
-    if action == "BUY":
-        buy_low = max(min(ma20, sar), close - 0.8 * atr_v)
-        buy_high = min(close + 0.2 * atr_v, close * 1.015)
-    else:
-        buy_low = max(min(ma20, sar, bb_mid), close - 1.2 * atr_v)
-        buy_high = min(max(ma20, sar, bb_mid), close * 1.01)
-
-    # Stop loss
-    stop_candidates = [sar, ma20 - 0.6 * atr_v, close - 1.5 * atr_v]
-    stop_loss = min([x for x in stop_candidates if not np.isnan(x)])
+    stop_loss = min(psar, ma20 - 0.6 * atr_v, close - 1.4 * atr_v)
     if stop_loss >= close:
         stop_loss = close - 1.2 * atr_v
 
-    # Targets
-    target1 = max(close + 1.5 * atr_v, bb_upper)
-    target2 = close + 2.5 * atr_v
+    sell1 = max(bb_upper, close + 1.5 * atr_v)
+    sell2 = close + 2.5 * atr_v
 
-    # Sell / take profit zone
-    if rsi_v >= 75:
-        sell_note = "RSI 已偏熱，可考慮分批停利。"
-    elif close >= bb_upper:
-        sell_note = "價格接近布林上軌，若量能不足可分批停利。"
-    elif close < sar:
-        sell_note = "價格跌破 PSAR，屬於明確轉弱訊號。"
+    if score >= 75 and close <= chase_limit:
+        action = "BUY"
+        zh = "🟢 買進"
+        cls = "buy"
+        one_line = f"可考慮在 {buy1:.2f}–{chase_limit:.2f} 分批買進，不建議追高超過 {chase_limit:.2f}。"
+    elif score >= 60:
+        action = "WAIT"
+        zh = "🟡 觀望，等買點"
+        cls = "wait"
+        one_line = f"目前不建議追價，較合理買點在 {buy2:.2f}–{buy1:.2f}。"
     else:
-        sell_note = "尚未出現明確賣出訊號，可用停損與目標價管理部位。"
-
-    risk_pct = (close - stop_loss) / close * 100
-    reward1_pct = (target1 - close) / close * 100
-    reward2_pct = (target2 - close) / close * 100
-    rr1 = reward1_pct / risk_pct if risk_pct > 0 else np.nan
+        action = "AVOID"
+        zh = "🔴 不買 / 避開"
+        cls = "sell"
+        one_line = f"訊號不足，不建議買進；若要觀察，等價格回到 {buy2:.2f} 附近再看。"
 
     return {
-        "action": action,
-        "action_zh": action_zh,
-        "css": css,
-        "buy_low": buy_low,
-        "buy_high": buy_high,
-        "stop_loss": stop_loss,
-        "target1": target1,
-        "target2": target2,
-        "risk_pct": risk_pct,
-        "reward1_pct": reward1_pct,
-        "reward2_pct": reward2_pct,
-        "rr1": rr1,
-        "sell_note": sell_note,
-        "bullish_count": bullish_count,
+        "action": action, "zh": zh, "cls": cls, "one_line": one_line,
+        "buy1": buy1, "buy2": buy2, "chase_limit": chase_limit,
+        "stop_loss": stop_loss, "sell1": sell1, "sell2": sell2
     }
 
-# -----------------------------
-# Sidebar
-# -----------------------------
-st.sidebar.header("🔎 股票輸入")
-raw_ticker = st.sidebar.text_input("股票代號", value="2633", help="台股可輸入 2633、2317、2330；美股可輸入 AAPL、NVDA。")
-period = st.sidebar.selectbox("資料期間", ["6mo", "1y", "2y", "5y"], index=2)
-st.sidebar.markdown("---")
-st.sidebar.caption("資料來源：股價與基本面多來自 yfinance；台股法人資料嘗試讀取 TWSE 公開資料。")
-run = st.sidebar.button("開始分析", type="primary")
+def decision_with_position(df, score, cost, shares):
+    latest = df.iloc[-1]
+    close, ma20, psar, atr_v, bb_upper = latest["Close"], latest["MA20"], latest["PSAR"], latest["ATR"], latest["BB_upper"]
 
+    ret_pct = (close - cost) / cost * 100 if cost > 0 else np.nan
+    profit_value = (close - cost) * shares * 1000 if shares > 0 else np.nan
+
+    stop_loss = min(psar, ma20 - 0.6 * atr_v, close - 1.3 * atr_v)
+    if stop_loss >= close:
+        stop_loss = close - 1.2 * atr_v
+
+    take_profit1 = max(bb_upper, cost * 1.06, close + 1.2 * atr_v)
+    take_profit2 = max(cost * 1.10, close + 2.2 * atr_v)
+    final_exit = max(cost * 1.15, close + 3.0 * atr_v)
+
+    if close <= stop_loss or score < 45:
+        zh = "🔴 賣出 / 停損"
+        cls = "sell"
+        one_line = f"目前已接近或跌破停損區，建議跌破 {stop_loss:.2f} 就停損離場。"
+    elif close >= take_profit2 or latest["RSI"] > 75:
+        zh = "🟠 分批停利"
+        cls = "wait"
+        one_line = f"目前已有停利條件，可考慮在 {take_profit1:.2f} 先賣一部分，{take_profit2:.2f} 再賣一部分。"
+    elif score >= 60 and close > psar:
+        zh = "🔵 續抱"
+        cls = "hold"
+        one_line = f"目前仍偏多，可續抱；跌破 {stop_loss:.2f} 再重新評估。"
+    else:
+        zh = "🟡 保守續抱 / 不加碼"
+        cls = "wait"
+        one_line = f"訊號普通，先不加碼；若跌破 {stop_loss:.2f} 應減碼或停損。"
+
+    return {
+        "zh": zh, "cls": cls, "one_line": one_line,
+        "ret_pct": ret_pct, "profit_value": profit_value,
+        "stop_loss": stop_loss,
+        "take_profit1": take_profit1,
+        "take_profit2": take_profit2,
+        "final_exit": final_exit
+    }
+
+def backtest_psar(df):
+    d = df.copy()
+    d["position"] = (d["Close"] > d["PSAR"]).astype(int)
+    d["position"] = d["position"].shift(1).fillna(0)
+    d["ret"] = d["Close"].pct_change().fillna(0)
+    d["strategy_ret"] = d["position"] * d["ret"]
+
+    total_strategy = (1 + d["strategy_ret"]).prod() - 1
+    total_hold = d["Close"].iloc[-1] / d["Close"].iloc[0] - 1
+
+    trades = []
+    pos = 0
+    entry = None
+    for i in range(1, len(d)):
+        signal = 1 if d["Close"].iloc[i] > d["PSAR"].iloc[i] else 0
+        if pos == 0 and signal == 1:
+            pos = 1
+            entry = d["Close"].iloc[i]
+        elif pos == 1 and signal == 0:
+            exit_price = d["Close"].iloc[i]
+            trades.append((exit_price - entry) / entry)
+            pos = 0
+            entry = None
+    if pos == 1 and entry is not None:
+        trades.append((d["Close"].iloc[-1] - entry) / entry)
+
+    wins = [x for x in trades if x > 0]
+    win_rate = len(wins) / len(trades) * 100 if trades else np.nan
+    avg_trade = np.mean(trades) * 100 if trades else np.nan
+
+    equity = (1 + d["strategy_ret"]).cumprod()
+    peak = equity.cummax()
+    drawdown = (equity / peak - 1).min() * 100
+
+    return {
+        "strategy_return": total_strategy * 100,
+        "buy_hold_return": total_hold * 100,
+        "win_rate": win_rate,
+        "avg_trade": avg_trade,
+        "max_drawdown": drawdown,
+        "trades": len(trades)
+    }
+
+def simple_up_probability(df, score):
+    latest = df.iloc[-1]
+    prob = 50
+    prob += (score - 50) * 0.45
+    if latest["MACD_hist"] > df.iloc[-2]["MACD_hist"]:
+        prob += 5
+    if latest["RSI"] > 75:
+        prob -= 8
+    if latest["Close"] > latest["MA20"] > latest["MA60"]:
+        prob += 6
+    if latest["Close"] < latest["PSAR"]:
+        prob -= 10
+    return max(5, min(95, prob))
+
+# =============================
+# Sidebar
+# =============================
+st.sidebar.header("股票與持股設定")
+raw_ticker = st.sidebar.text_input("股票代號", value="2633")
+mode = st.sidebar.radio("我目前是否持有？", ["尚未持有", "已持有"], index=0)
+cost = 0.0
+shares = 0.0
+if mode == "已持有":
+    cost = st.sidebar.number_input("持有成本價", min_value=0.0, value=25.60, step=0.05)
+    shares = st.sidebar.number_input("持有張數", min_value=0.0, value=1.0, step=1.0)
+
+st.sidebar.markdown("---")
+timeframe = st.sidebar.selectbox("分析時間週期", ["日線 1D", "小時線 1H"], index=0)
+if timeframe == "日線 1D":
+    interval, period = "1d", st.sidebar.selectbox("回測時間", ["1y", "2y", "5y"], index=2)
+else:
+    interval, period = "60m", st.sidebar.selectbox("回測時間", ["1mo", "3mo", "6mo", "1y"], index=1)
+
+run = st.sidebar.button("開始分析", type="primary")
+st.sidebar.caption("股價資料可能有延遲；台股小時線資料穩定度會受 yfinance 限制。")
+
+# =============================
+# Main
+# =============================
 if run or raw_ticker:
     ticker, stock_code = normalize_ticker(raw_ticker)
 
-    with st.spinner("正在抓取股價與計算指標..."):
-        price = fetch_price_data(ticker, period)
+    with st.spinner("正在抓取股價資料..."):
+        price = fetch_price_data(ticker, period, interval)
 
     if price.empty or len(price) < 80:
-        st.error("抓不到足夠股價資料。請確認股票代號是否正確，或改用較長期間。")
+        st.error("資料不足，請換較長回測時間，或確認股票代號是否正確。")
         st.stop()
 
     df = prepare_indicators(price)
+    fundamentals = fetch_fundamentals(ticker)
+    chip = fetch_twse_institutional(stock_code)
 
-    with st.spinner("正在抓取基本面與籌碼資料..."):
-        fundamentals = fetch_fundamentals(ticker)
-        chip = fetch_twse_institutional(stock_code)
-        margin = fetch_margin_data(stock_code)
-
-    f_score, f_notes = score_fundamentals(fundamentals)
-    t_score, t_notes = score_technicals(df)
-    c_score, c_notes = score_chips(chip, margin)
-    tr_score, tr_notes = score_trend(df)
-    total_score = f_score + t_score + c_score + tr_score
-    rec = recommendation(total_score)
     latest = df.iloc[-1]
-    plan = compute_trading_plan(df, total_score)
+    score, reasons_buy, reasons_sell = score_market(df, chip)
+    prob = simple_up_probability(df, score)
+    bt = backtest_psar(df)
 
-    # Header cards
-    st.markdown(f"### {fundamentals.get('Company', ticker)} ({ticker})")
-    st.markdown(f"""
-    <div class="card {plan['css']}">
-        <div class="metric-title">今日交易判斷</div>
-        <div class="metric-value">{plan['action_zh']}</div>
-        <div class="small-note">總分 {total_score}/100｜多方訊號 {plan['bullish_count']}/6｜收盤價 {latest['Close']:.2f}</div>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown(f"## {fundamentals.get('Company', ticker)} ({ticker})")
+    st.caption(f"分析週期：{timeframe}｜最後資料時間：{df.index[-1]}")
 
-    col1, col2, col3, col4 = st.columns(4)
-    col1.markdown(f'<div class="card"><div class="metric-title">最新收盤價</div><div class="metric-value">{latest["Close"]:.2f}</div><div class="small-note">Last close</div></div>', unsafe_allow_html=True)
-    col2.markdown(f'<div class="card"><div class="metric-title">AI 總分</div><div class="metric-value">{total_score}/100</div><div class="small-note">{rec}</div></div>', unsafe_allow_html=True)
-    col3.markdown(f'<div class="card"><div class="metric-title">RSI</div><div class="metric-value">{latest["RSI"]:.1f}</div><div class="small-note">45–70 較健康</div></div>', unsafe_allow_html=True)
-    col4.markdown(f'<div class="card"><div class="metric-title">PSAR</div><div class="metric-value">{latest["SAR"]:.2f}</div><div class="small-note">跌破 PSAR 偏賣出</div></div>', unsafe_allow_html=True)
+    if mode == "尚未持有":
+        decision = decision_without_position(df, score)
+        st.markdown(f"""
+        <div class="big-signal {decision['cls']}">
+            <div class="signal-title">今日明確建議</div>
+            <div class="signal-main">{decision['zh']}</div>
+            <div class="signal-sub">{decision['one_line']}</div>
+        </div>
+        """, unsafe_allow_html=True)
 
-    st.markdown("## 🎯 交易計畫")
-    p1, p2, p3, p4 = st.columns(4)
-    p1.markdown(f'<div class="trade-box"><div class="trade-label">建議買點區間</div><div class="trade-value">{plan["buy_low"]:.2f}–{plan["buy_high"]:.2f}</div><div class="small-note">接近支撐區較佳</div></div>', unsafe_allow_html=True)
-    p2.markdown(f'<div class="trade-box"><div class="trade-label">停損點</div><div class="trade-value">{plan["stop_loss"]:.2f}</div><div class="small-note">風險約 {plan["risk_pct"]:.1f}%</div></div>', unsafe_allow_html=True)
-    p3.markdown(f'<div class="trade-box"><div class="trade-label">第一目標價</div><div class="trade-value">{plan["target1"]:.2f}</div><div class="small-note">潛在報酬約 {plan["reward1_pct"]:.1f}%</div></div>', unsafe_allow_html=True)
-    p4.markdown(f'<div class="trade-box"><div class="trade-label">第二目標價</div><div class="trade-value">{plan["target2"]:.2f}</div><div class="small-note">潛在報酬約 {plan["reward2_pct"]:.1f}%</div></div>', unsafe_allow_html=True)
+        c1, c2, c3, c4 = st.columns(4)
+        c1.markdown(f'<div class="price-card"><div class="price-label">目前價格</div><div class="price-value">{latest["Close"]:.2f}</div><div class="price-note">最新收盤/週期價格</div></div>', unsafe_allow_html=True)
+        c2.markdown(f'<div class="price-card"><div class="price-label">第一買點</div><div class="price-value">{decision["buy1"]:.2f}</div><div class="price-note">接近支撐，可觀察</div></div>', unsafe_allow_html=True)
+        c3.markdown(f'<div class="price-card"><div class="price-label">第二買點</div><div class="price-value">{decision["buy2"]:.2f}</div><div class="price-note">更保守的拉回價</div></div>', unsafe_allow_html=True)
+        c4.markdown(f'<div class="price-card"><div class="price-label">不要追高超過</div><div class="price-value">{decision["chase_limit"]:.2f}</div><div class="price-note">高於此價風險較高</div></div>', unsafe_allow_html=True)
 
-    st.markdown(f"""
-    <div class="warning-box">
-    <b>賣出判斷：</b>{plan['sell_note']}<br>
-    <b>操作提醒：</b>若目前價格高於買點區間太多，不追價；若跌破停損點，應重新評估，不要只看 AI 分數。
-    </div>
-    """, unsafe_allow_html=True)
+        c5, c6, c7, c8 = st.columns(4)
+        c5.markdown(f'<div class="price-card"><div class="price-label">停損價格</div><div class="price-value">{decision["stop_loss"]:.2f}</div><div class="price-note">跌破應重新評估</div></div>', unsafe_allow_html=True)
+        c6.markdown(f'<div class="price-card"><div class="price-label">第一賣點</div><div class="price-value">{decision["sell1"]:.2f}</div><div class="price-note">可分批停利</div></div>', unsafe_allow_html=True)
+        c7.markdown(f'<div class="price-card"><div class="price-label">第二賣點</div><div class="price-value">{decision["sell2"]:.2f}</div><div class="price-note">較積極目標</div></div>', unsafe_allow_html=True)
+        c8.markdown(f'<div class="price-card"><div class="price-label">上漲機率</div><div class="price-value">{prob:.0f}%</div><div class="price-note">未來20期估計</div></div>', unsafe_allow_html=True)
 
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(["📌 總結", "📈 交易圖", "📊 指標分數", "💰 籌碼與基本面", "📄 原始資料"])
+    else:
+        decision = decision_with_position(df, score, cost, shares)
+        st.markdown(f"""
+        <div class="big-signal {decision['cls']}">
+            <div class="signal-title">我的持股建議</div>
+            <div class="signal-main">{decision['zh']}</div>
+            <div class="signal-sub">{decision['one_line']}</div>
+        </div>
+        """, unsafe_allow_html=True)
 
-    with tab1:
-        st.subheader("系統解讀")
-        st.write(f"目前系統評分為 **{total_score}/100**，整體判斷為 **{rec}**。交易模式判斷為 **{plan['action_zh']}**。")
-        st.write("這裡的買點不是保證會到的價格，而是系統依據 MA20、PSAR、布林中軌與 ATR 波動度估算出的較合理進場區。")
+        c1, c2, c3, c4 = st.columns(4)
+        c1.markdown(f'<div class="price-card"><div class="price-label">目前價格</div><div class="price-value">{latest["Close"]:.2f}</div><div class="price-note">最新收盤/週期價格</div></div>', unsafe_allow_html=True)
+        c2.markdown(f'<div class="price-card"><div class="price-label">持有成本</div><div class="price-value">{cost:.2f}</div><div class="price-note">你輸入的成本</div></div>', unsafe_allow_html=True)
+        c3.markdown(f'<div class="price-card"><div class="price-label">目前報酬</div><div class="price-value">{decision["ret_pct"]:.2f}%</div><div class="price-note">未實現報酬率</div></div>', unsafe_allow_html=True)
+        c4.markdown(f'<div class="price-card"><div class="price-label">估計損益</div><div class="price-value">{decision["profit_value"]:,.0f}</div><div class="price-note">以每張1000股估算</div></div>', unsafe_allow_html=True)
 
-        st.markdown("#### 今天比較重要的訊號")
-        if plan["action"] == "BUY":
-            st.success("目前偏多訊號較多，可以考慮分批，而不是一次全買。")
-        elif plan["action"] == "SELL":
-            st.error("目前轉弱訊號較明顯，若已有持股，應注意停損或減碼。")
+        c5, c6, c7, c8 = st.columns(4)
+        c5.markdown(f'<div class="price-card"><div class="price-label">停損賣出</div><div class="price-value">{decision["stop_loss"]:.2f}</div><div class="price-note">跌破就要小心</div></div>', unsafe_allow_html=True)
+        c6.markdown(f'<div class="price-card"><div class="price-label">第一停利賣點</div><div class="price-value">{decision["take_profit1"]:.2f}</div><div class="price-note">可先賣 30%</div></div>', unsafe_allow_html=True)
+        c7.markdown(f'<div class="price-card"><div class="price-label">第二停利賣點</div><div class="price-value">{decision["take_profit2"]:.2f}</div><div class="price-note">可再賣 30%</div></div>', unsafe_allow_html=True)
+        c8.markdown(f'<div class="price-card"><div class="price-label">最終出清參考</div><div class="price-value">{decision["final_exit"]:.2f}</div><div class="price-note">強勢目標</div></div>', unsafe_allow_html=True)
+
+    st.markdown('<div class="section-title">為什麼系統這樣判斷？</div>', unsafe_allow_html=True)
+    r1, r2 = st.columns(2)
+    with r1:
+        st.markdown('<div class="reason-box"><b>偏多理由</b>', unsafe_allow_html=True)
+        if reasons_buy:
+            for r in reasons_buy[:6]:
+                st.write("✅ " + r)
         else:
-            st.warning("目前不是很漂亮的買點，較適合等待拉回或等待更明確突破。")
+            st.write("目前偏多理由不足。")
+        st.markdown('</div>', unsafe_allow_html=True)
+    with r2:
+        st.markdown('<div class="reason-box"><b>風險理由</b>', unsafe_allow_html=True)
+        if reasons_sell:
+            for r in reasons_sell[:6]:
+                st.write("⚠️ " + r)
+        else:
+            st.write("目前沒有明顯風險訊號。")
+        st.markdown('</div>', unsafe_allow_html=True)
 
-        st.markdown("#### 技術面")
-        for n in t_notes:
-            st.write("- " + n)
+    st.markdown('<div class="section-title">策略回測：PSAR vs Buy-and-Hold</div>', unsafe_allow_html=True)
+    b1, b2, b3, b4, b5 = st.columns(5)
+    b1.metric("PSAR策略報酬", f"{bt['strategy_return']:.1f}%")
+    b2.metric("買進持有報酬", f"{bt['buy_hold_return']:.1f}%")
+    b3.metric("勝率", f"{bt['win_rate']:.1f}%" if not np.isnan(bt["win_rate"]) else "N/A")
+    b4.metric("平均每筆", f"{bt['avg_trade']:.1f}%" if not np.isnan(bt["avg_trade"]) else "N/A")
+    b5.metric("最大回撤", f"{bt['max_drawdown']:.1f}%")
 
-        st.markdown("#### 趨勢面")
-        for n in tr_notes:
-            st.write("- " + n)
+    tabs = st.tabs(["交易圖", "投資模式", "技術細節", "原始資料"])
 
-    with tab2:
-        chart_df = df[["Close", "SAR", "MA20", "MA60", "BB_upper", "BB_mid", "BB_lower"]].tail(180).copy()
-        chart_df["Buy zone low"] = plan["buy_low"]
-        chart_df["Buy zone high"] = plan["buy_high"]
-        chart_df["Stop loss"] = plan["stop_loss"]
-        chart_df["Target 1"] = plan["target1"]
-        st.line_chart(chart_df)
+    with tabs[0]:
+        chart = df[["Close", "PSAR", "MA20", "MA60", "BB_upper", "BB_mid", "BB_lower"]].tail(180).copy()
+        if mode == "尚未持有":
+            chart["Buy 1"] = decision["buy1"]
+            chart["Buy 2"] = decision["buy2"]
+            chart["Stop loss"] = decision["stop_loss"]
+            chart["Sell 1"] = decision["sell1"]
+            chart["Sell 2"] = decision["sell2"]
+        else:
+            chart["Cost"] = cost
+            chart["Stop loss"] = decision["stop_loss"]
+            chart["Take profit 1"] = decision["take_profit1"]
+            chart["Take profit 2"] = decision["take_profit2"]
+        st.line_chart(chart)
 
-        st.markdown("### MACD")
+    with tabs[1]:
+        st.subheader("基本面")
+        st.dataframe(pd.DataFrame([fundamentals]).round(3), hide_index=True, use_container_width=True)
+        st.subheader("籌碼面")
+        st.dataframe(pd.DataFrame([chip]), hide_index=True, use_container_width=True)
+
+    with tabs[2]:
+        tech = pd.DataFrame([{
+            "Close": latest["Close"],
+            "PSAR": latest["PSAR"],
+            "MA20": latest["MA20"],
+            "MA60": latest["MA60"],
+            "RSI": latest["RSI"],
+            "K": latest["K"],
+            "D": latest["D"],
+            "MACD": latest["MACD"],
+            "MACD signal": latest["MACD_signal"],
+            "ATR": latest["ATR"],
+            "AI signal score": score,
+            "Future 20-period up probability": prob,
+        }])
+        st.dataframe(tech.round(3), hide_index=True, use_container_width=True)
         st.line_chart(df[["MACD", "MACD_signal", "MACD_hist"]].tail(180))
-
-        st.markdown("### RSI / KD")
         st.line_chart(df[["RSI", "K", "D"]].tail(180))
 
-    with tab3:
-        score_df = pd.DataFrame([
-            {"項目": "基本面", "分數": f"{f_score}/25"},
-            {"項目": "技術面", "分數": f"{t_score}/25"},
-            {"項目": "籌碼面", "分數": f"{c_score}/25"},
-            {"項目": "趨勢面", "分數": f"{tr_score}/25"},
-            {"項目": "總分", "分數": f"{total_score}/100"},
-            {"項目": "交易建議", "分數": plan["action_zh"]},
-        ])
-        st.dataframe(score_df, use_container_width=True, hide_index=True)
+    with tabs[3]:
+        st.dataframe(df.tail(120).round(3), use_container_width=True)
 
-        st.markdown("#### 基本面重點")
-        for n in f_notes:
-            st.write("- " + n)
-
-        st.markdown("#### 籌碼面重點")
-        for n in c_notes:
-            st.write("- " + n)
-
-    with tab4:
-        left, right = st.columns(2)
-
-        with left:
-            st.markdown("### 基本面")
-            st.dataframe(pd.DataFrame([fundamentals]).round(3), use_container_width=True, hide_index=True)
-
-        with right:
-            st.markdown("### 籌碼面")
-            chip_df = pd.DataFrame([{
-                "外資買賣超股數": chip.get("foreign_net", np.nan),
-                "投信買賣超股數": chip.get("investment_trust_net", np.nan),
-                "自營商買賣超股數": chip.get("dealer_net", np.nan),
-                "三大法人買賣超股數": chip.get("total_institution_net", np.nan),
-                "資料來源說明": chip.get("source_note", "")
-            }])
-            st.dataframe(chip_df, use_container_width=True, hide_index=True)
-
-            margin_df = pd.DataFrame([{
-                "融資餘額": margin.get("margin_balance", np.nan),
-                "融券餘額": margin.get("short_balance", np.nan),
-                "資料來源說明": margin.get("margin_short_note", "")
-            }])
-            st.dataframe(margin_df, use_container_width=True, hide_index=True)
-
-    with tab5:
-        st.dataframe(df.tail(80).round(3), use_container_width=True)
-
-    st.markdown("---")
-    st.caption("免責聲明：本系統僅供教學與研究用，不構成投資建議，不保證獲利。股價資料可能有延遲，台股通常不是券商等級逐筆即時。")
+    st.markdown("""
+    <div class="alert-box">
+    <b>重要提醒：</b>這個 APP 是教學與研究用的交易決策輔助工具，不是投資建議，也不保證獲利。
+    買點、賣點、停損與上漲機率都是根據歷史價格與技術規則推估，實際交易仍要自行承擔風險。
+    </div>
+    """, unsafe_allow_html=True)
